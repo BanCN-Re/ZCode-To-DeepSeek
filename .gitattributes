@@ -1,0 +1,8 @@
+# Keep the checked-in bytes stable across platforms: the Python sources are
+# plain UTF-8 text, and normalising them here stops Windows checkouts from
+# rewriting every file on the first commit.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.zstd binary
+*.sqlite binary

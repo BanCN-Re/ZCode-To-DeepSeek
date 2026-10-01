@@ -1,0 +1,17 @@
+# scratch: extracted harness reader, local indices, previews
+_dshrt/
+dsh_asar_entries.json
+_rt*/
+out/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.log
+*.tmp
+*.bak
