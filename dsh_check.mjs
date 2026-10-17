@@ -2,10 +2,18 @@
 // model-visible transcript the harness would send.
 // Usage: node _rt_realcheck.mjs <logfile> [--full]
 import fs from 'node:fs';
+import path from 'node:path';
 import zlib from 'node:zlib';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
-const require = createRequire('D:/Work/ZCodehelp/_dshrt/dsh/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/index.js');
+// Resolve the extracted reader relative to this script. The extractor writes it
+// to `./_dshrt` by default, so a fixed absolute path only ever worked on the
+// machine it was authored on.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(
+  path.join(here, '_dshrt/dsh/node_modules/@deepseek-ai/dsh-session-format-catalog/lib/index.js'),
+);
 const logFile = process.argv[2];
 const full = process.argv.includes('--full');
 

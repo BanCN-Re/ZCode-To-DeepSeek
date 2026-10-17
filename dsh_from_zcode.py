@@ -130,6 +130,43 @@ def assistant_content(parts, *, keep_reasoning=True):
     return content
 
 
+def dsh_usage(raw):
+    """Translate a ZCode token report into the shape DSH validates.
+
+    ZCode reports ``{total, input, output, reasoning, cache: {read, write}}``;
+    DSH's session schema expects
+    ``{totalTokens, inputTokens, outputTokens, thoughtTokens?, cacheReadTokens?,
+    cacheWriteTokens?}`` and rejects the row when ``inputTokens``/``outputTokens``
+    are absent (they surface as ``NaN`` in the projection).
+    """
+    if not isinstance(raw, dict) or not raw:
+        return {}
+    if 'inputTokens' in raw and 'outputTokens' in raw:
+        return raw
+    if 'input' not in raw and 'output' not in raw:
+        return {}
+
+    def num(v):
+        return v if isinstance(v, (int, float)) and v == v else 0
+
+    cache = raw.get('cache') if isinstance(raw.get('cache'), dict) else {}
+    inp, out = num(raw.get('input')), num(raw.get('output'))
+    reasoning = num(raw.get('reasoning'))
+    read, write = num(cache.get('read')), num(cache.get('write'))
+    usage = {
+        'totalTokens': int(num(raw.get('total')) or (inp + out)),
+        'inputTokens': int(inp),
+        'outputTokens': int(out),
+    }
+    if reasoning:
+        usage['thoughtTokens'] = int(reasoning)
+    if read:
+        usage['cacheReadTokens'] = int(read)
+    if write:
+        usage['cacheWriteTokens'] = int(write)
+    return usage
+
+
 def build_stream(content, usage=None):
     """A minimal but well-formed chunk log for one assistant message.
 

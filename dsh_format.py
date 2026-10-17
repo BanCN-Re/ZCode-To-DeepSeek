@@ -120,15 +120,38 @@ def read_jsonl(path):
     return header, events
 
 
-def write_jsonl(path, header, events, compression='zstd', level=3):
-    """Write a session log, creating parent directories as needed."""
+# The harness writes a session log as a *concatenation of independent zstd
+# frames*: one frame carrying only the header line, then one frame per append
+# batch. Its scanner walks the file frame by frame, so a single monolithic
+# frame is silently skipped at listing time and the session never appears.
+FRAME_BATCH_EVENTS = 64
+
+
+def write_jsonl(path, header, events, compression='zstd', level=3, batch=FRAME_BATCH_EVENTS):
+    """Write a session log, creating parent directories as needed.
+
+    With ``compression='zstd'`` the file is emitted as the multi-frame layout
+    the harness itself produces: a header-only frame followed by one frame per
+    ``batch`` events. A single compressed blob is *not* equivalent — the
+    harness's listing scanner only admits the multi-frame form.
+    """
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    text = json.dumps(header, ensure_ascii=False) + '\n'
-    text += '\n'.join(json.dumps(e, ensure_ascii=False) for e in events)
-    text += '\n'
-    blob = text.encode('utf-8')
+    header_text = json.dumps(header, ensure_ascii=False) + '\n'
+    chunks = []
     if compression == 'zstd':
-        blob = _cctx(level).compress(blob)
+        cctx = _cctx(level)
+        chunks.append(cctx.compress(header_text.encode('utf-8')))
+        for i in range(0, len(events), batch):
+            part = ''.join(json.dumps(e, ensure_ascii=False) + '\n'
+                           for e in events[i:i + batch])
+            chunks.append(cctx.compress(part.encode('utf-8')))
+    else:
+        chunks.append(header_text.encode('utf-8'))
+        for i in range(0, len(events), batch):
+            part = ''.join(json.dumps(e, ensure_ascii=False) + '\n'
+                           for e in events[i:i + batch])
+            chunks.append(part.encode('utf-8'))
+    blob = b''.join(chunks)
     tmp = path + '.tmp'
     with open(tmp, 'wb') as f:
         f.write(blob)

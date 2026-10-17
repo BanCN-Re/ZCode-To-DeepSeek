@@ -128,7 +128,7 @@ def cmd_selftest(argv):
     log.tool_call('call_selftest_1', 'pwsh',
                   json.dumps({'command': 'echo hi', 'description': 'say hi'}),
                   turn=1, step=1)
-    log.tool_result('hi\n', call_id='call_selftest_1')
+    log.tool_result('hi\n', call_id='call_selftest_1', turn=1, step=1)
     log.step_end(1, 1)
     log.step_start(1, 2)
     log.assistant_message([{'type': 'text', 'text': 'done'}], turn=1, step=2,

@@ -121,11 +121,18 @@ class Log:
         }
         return self.add('assistant/message', data, time=time, surface_op='append')
 
-    def tool_result(self, text, *, call_id, is_error=False, time=None, msg_id=None,
-                    source_event_seqs=None):
+    def tool_result(self, text, *, call_id, turn, step, is_error=False, time=None,
+                    msg_id=None, source_event_seqs=None):
+        """One tool result.
+
+        ``turn``/``step`` are required: the harness validates that every
+        step-scoped event names the currently open turn and step, and rejects a
+        log whose ``tool/result`` rows carry ``null`` there
+        (``tool/result does not match an open turn and step``).
+        """
         data = {
-            'turn': None,
-            'step': None,
+            'turn': turn,
+            'step': step,
             'message': {
                 'role': 'tool',
                 'source': {'kind': 'tool', 'callId': call_id},
